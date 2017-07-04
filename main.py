@@ -1,6 +1,136 @@
 import numpy as np
 import time
+from PyQt4 import QtGui, QtCore
+import sys
 
+#klasa z glownym oknem i akcjami
+class Window(QtGui.QMainWindow):
+
+    def __init__(self):
+        super(Window,self).__init__()
+        self.setGeometry(100,100,700,500)
+        self.setWindowTitle("Conway's Game of Life")
+
+        exitAct = QtGui.QAction("&Quit", self)
+        exitAct.setShortcut("Crtl+Q")
+        exitAct.setStatusTip('Leave program')
+        exitAct.triggered.connect(self.closemyapp)
+
+        aboutAct = QtGui.QAction("&About", self)
+        aboutAct.triggered.connect(self.aboutapp)
+
+        # newAct = QtGui.QAction("&New Game", self)
+        # newAct.setShortcut("Ctrl+N")
+        # newAct.setStatusTip('Start a new simulation')
+        # newAct.triggered.connect(self.gamewindow)
+
+        instrAct = QtGui.QAction("&Instructions", self)
+        instrAct.triggered.connect(self.instructionswindow)
+
+        self.statusBar()
+
+        mainMenu = self.menuBar()
+        fileMenu = mainMenu.addMenu('&Menu')
+        fileMenu.addAction(instrAct)
+        fileMenu.addAction(aboutAct)
+        fileMenu.addAction(exitAct)
+
+        self.home()
+
+    def instructionswindow(self):
+        QtGui.QMessageBox.about(self,"How-to","In the proper fields, input the following data:\n"
+                                "-number of rows and columns of the game board\n"
+                                "-number of generations\n"
+                                "-choose the file with input data\n"
+                                "Output file will be generated automatically after the simulation")
+
+    def Enterpress(self):
+        Game.rows = self.rowz.value()
+        print Game.rows
+
+    def rowzinput(self):
+        Game.rows = rowz.text()
+        print Game.rows
+
+    def colzinput(self,text):
+        Game.cols = text
+
+    def home(self):
+        mainWidget = QtGui.QWidget()  #stworzenie widgetu z layoutem
+
+        Life = Game(10, 10)
+        Life.initialfillmatrix()
+
+        table = QtGui.QTableWidget()  #stworzenie widgetu z tabela
+        table.setRowCount(10)
+        table.setColumnCount(10)
+
+        # header = table.horizontalHeader()
+        # for w in range(10):
+        table.resizeRowsToContents()
+        table.resizeColumnsToContents()
+
+        for w in range(10):  #wpisanie komorek do wspolrzednych z danych we.
+            for k in range(10):
+                table.setItem(w,k,QtGui.QTableWidgetItem(Life.matrix[w][k]))
+
+        #tworzenie widegtow z menu glownego:
+
+        rowz = QtGui.QSpinBox()
+        #rowz.setValidator(QtGui.QIntValidator())
+        rowz.setMinimum(1)
+        rowz.setMaximum(20)
+        rowz.setFont(QtGui.QFont("Arial",10))
+        rowz.valueChanged.connect(self.Enterpress)
+
+
+
+        colz = QtGui.QLineEdit()
+        colz.setValidator(QtGui.QIntValidator())
+        colz.setMaxLength(2)
+        colz.setFont(QtGui.QFont("Arial", 10))
+        #colz.editingFinished.connect(self.colzinput(colz.text()))
+
+        formy = QtGui.QFormLayout()
+
+
+        hbox = QtGui.QHBoxLayout()  #hbox (layout) do poukladania widgetow
+        hbox.addWidget(rowz)
+        hbox.addWidget(table)
+        #hbox.addStretch()
+
+        mainWidget.setLayout(hbox)   #wrzucenie glownego widgeta do boxa
+        mainWidget.show()
+
+        self.setCentralWidget(mainWidget)
+
+        self.show()
+
+    def closemyapp(self):
+        wybor = QtGui.QMessageBox.question(self,'Quit',"Are you sure?",QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+        if wybor == QtGui.QMessageBox.Yes:
+            sys.exit()
+        else:
+            pass
+
+    def aboutapp(self):
+        str1 = "Author : T. Noga"
+        str2 = "2017"
+        str3 = "Made for and with educational purposes"
+        QtGui.QMessageBox.about(self,"About","\t"+str1+"\n"+str3+"\n"+str2)
+
+    def startnewgame(self):
+        Life = Game(10,10)
+        Life.initialfillmatrix()
+        Life.printMatrix()
+        for i in range(4):
+            Life.playGame()
+            time.sleep(0.4)
+            Life.printMatrix()
+        Life.printToFile()
+
+
+#klasa z tablica do gry i metodami odpowiedzialnymi za jej przebieg
 class Game:
 
     # defaultowy rozmiar tablicy z gra
@@ -165,17 +295,26 @@ class Game:
         self.matrix = backupmatrix   #przepisanie tablicy
 
 
-print "Gra w zycie:\n"
-rows = raw_input("Podaj ilosc wierszy tablicy z gra:\n")
-cols = raw_input("Podaj ilosc kolumn tablicy z gra:\n")
-generations = raw_input("Podaj ilosc pokolen:\n")
+def run_app():
+    app = QtGui.QApplication(sys.argv)
+    GUI = Window()
+    GUI.show()
+    sys.exit(app.exec_())
 
-Life = Game(rows,cols)
-Life.initialfillmatrix()
-Life.printMatrix()
-for i in range(int(generations)):
-    Life.playGame()
-    time.sleep(0.4)
-    Life.printMatrix()
-Life.printToFile()
+
+# print "Gra w zycie:\n"
+# rows = raw_input("Podaj ilosc wierszy tablicy z gra:\n")
+# cols = raw_input("Podaj ilosc kolumn tablicy z gra:\n")
+# generations = raw_input("Podaj ilosc pokolen:\n")
+
+run_app()
+
+# Life = Game(rows,cols)
+# Life.initialfillmatrix()
+# Life.printMatrix()
+# for i in range(int(generations)):
+#     Life.playGame()
+#     time.sleep(0.4)
+#     Life.printMatrix()
+# Life.printToFile()
 
