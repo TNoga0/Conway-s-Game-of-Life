@@ -44,57 +44,49 @@ class Window(QtGui.QMainWindow):
                                 "-choose the file with input data\n"
                                 "Output file will be generated automatically after the simulation")
 
-
-    def rowzinput(self):
-        #Game.rows = rowz.text()
-        print Game.rows
-
-    def colzinput(self,text):
-        Game.cols = text
-
     def home(self):
         mainWidget = QtGui.QWidget()  #stworzenie widgetu z layoutem
 
-        Life = Game(10, 10)
+        Life = Game(Game.rows, Game.cols)
         Life.initialfillmatrix()
 
         table = QtGui.QTableWidget()  #stworzenie widgetu z tabela
-        table.setRowCount(10)
-        table.setColumnCount(10)
+        table.setRowCount(Game.rows)
+        table.setColumnCount(Game.cols)
 
         # header = table.horizontalHeader()
         # for w in range(10):
         table.resizeRowsToContents()
         table.resizeColumnsToContents()
 
-        for w in range(10):  #wpisanie komorek do wspolrzednych z danych we.
-            for k in range(10):
+        for w in range(Game.rows):  #wpisanie komorek do wspolrzednych z danych we.
+            for k in range(Game.cols):
                 table.setItem(w,k,QtGui.QTableWidgetItem(Life.matrix[w][k]))
 
         #tworzenie widegtow z menu glownego:
 
-        self.rowz = QtGui.QSpinBox()
-        #rowz.setValidator(QtGui.QIntValidator())
+        self.rowz = QtGui.QSpinBox()   #by uzywac wartosci z boxa musi byc
         self.rowz.setMinimum(1)
         self.rowz.setMaximum(20)
+        self.rowz.setValue(10)
         self.rowz.setFont(QtGui.QFont("Arial",10))
-        self.rowz.valueChanged.connect(self.Enterpress)
+        self.rowz.valueChanged.connect(self.rowzinput)
 
+        self.colz = QtGui.QSpinBox()
+        self.colz.setMinimum(1)
+        self.colz.setMaximum(20)
+        self.colz.setValue(10)
+        self.colz.setFont(QtGui.QFont("Arial", 10))
+        self.colz.valueChanged.connect(self.colzinput)
 
-
-        colz = QtGui.QLineEdit()
-        colz.setValidator(QtGui.QIntValidator())
-        colz.setMaxLength(2)
-        colz.setFont(QtGui.QFont("Arial", 10))
-        #colz.editingFinished.connect(self.colzinput(colz.text()))
-
-        formy = QtGui.QFormLayout()
+        formy = QtGui.QFormLayout()  #do poukladania pionowo inputboxow
+        formy.addWidget(self.rowz)
+        formy.addWidget(self.colz)
 
 
         hbox = QtGui.QHBoxLayout()  #hbox (layout) do poukladania widgetow
-        hbox.addWidget(self.rowz)
+        hbox.addLayout(formy)
         hbox.addWidget(table)
-        #hbox.addStretch()
 
         mainWidget.setLayout(hbox)   #wrzucenie glownego widgeta do boxa
         mainWidget.show()
@@ -103,9 +95,13 @@ class Window(QtGui.QMainWindow):
 
         self.show()
 
-    def Enterpress(self):
+    def rowzinput(self):
         Game.rows = self.rowz.value()
         print Game.rows
+
+    def colzinput(self):
+        Game.cols = self.colz.value()
+        print Game.cols
 
     def closemyapp(self):
         wybor = QtGui.QMessageBox.question(self,'Quit',"Are you sure?",QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
@@ -121,7 +117,7 @@ class Window(QtGui.QMainWindow):
         QtGui.QMessageBox.about(self,"About","\t"+str1+"\n"+str3+"\n"+str2)
 
     def startnewgame(self):
-        Life = Game(10,10)
+        Life = Game(Game.rows,Game.cols)
         Life.initialfillmatrix()
         Life.printMatrix()
         for i in range(4):
