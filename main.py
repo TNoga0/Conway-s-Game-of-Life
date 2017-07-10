@@ -44,12 +44,9 @@ class Window(QtGui.QMainWindow):
                                 "-choose the file with input data\n"
                                 "Output file will be generated automatically after the simulation")
 
-    def Enterpress(self):
-        Game.rows = self.rowz.value()
-        print Game.rows
 
     def rowzinput(self):
-        Game.rows = rowz.text()
+        #Game.rows = rowz.text()
         print Game.rows
 
     def colzinput(self,text):
@@ -76,12 +73,12 @@ class Window(QtGui.QMainWindow):
 
         #tworzenie widegtow z menu glownego:
 
-        rowz = QtGui.QSpinBox()
+        self.rowz = QtGui.QSpinBox()
         #rowz.setValidator(QtGui.QIntValidator())
-        rowz.setMinimum(1)
-        rowz.setMaximum(20)
-        rowz.setFont(QtGui.QFont("Arial",10))
-        rowz.valueChanged.connect(self.Enterpress)
+        self.rowz.setMinimum(1)
+        self.rowz.setMaximum(20)
+        self.rowz.setFont(QtGui.QFont("Arial",10))
+        self.rowz.valueChanged.connect(self.Enterpress)
 
 
 
@@ -95,7 +92,7 @@ class Window(QtGui.QMainWindow):
 
 
         hbox = QtGui.QHBoxLayout()  #hbox (layout) do poukladania widgetow
-        hbox.addWidget(rowz)
+        hbox.addWidget(self.rowz)
         hbox.addWidget(table)
         #hbox.addStretch()
 
@@ -105,6 +102,10 @@ class Window(QtGui.QMainWindow):
         self.setCentralWidget(mainWidget)
 
         self.show()
+
+    def Enterpress(self):
+        Game.rows = self.rowz.value()
+        print Game.rows
 
     def closemyapp(self):
         wybor = QtGui.QMessageBox.question(self,'Quit',"Are you sure?",QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
