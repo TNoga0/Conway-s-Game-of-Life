@@ -6,6 +6,8 @@ import sys
 #klasa z glownym oknem i akcjami
 class Window(QtGui.QMainWindow):
 
+    filepath = "default.txt"
+
     def __init__(self):
         super(Window,self).__init__()
         self.setGeometry(100,100,700,500)
@@ -18,11 +20,6 @@ class Window(QtGui.QMainWindow):
 
         aboutAct = QtGui.QAction("&About", self)
         aboutAct.triggered.connect(self.aboutapp)
-
-        # newAct = QtGui.QAction("&New Game", self)
-        # newAct.setShortcut("Ctrl+N")
-        # newAct.setStatusTip('Start a new simulation')
-        # newAct.triggered.connect(self.gamewindow)
 
         instrAct = QtGui.QAction("&Instructions", self)
         instrAct.triggered.connect(self.instructionswindow)
@@ -47,61 +44,75 @@ class Window(QtGui.QMainWindow):
     def home(self):
         mainWidget = QtGui.QWidget()  #stworzenie widgetu z layoutem
 
-        Life = Game(Game.rows, Game.cols)
-        Life.initialfillmatrix()
+        self.Life = Game(Game.rows, Game.cols)
 
-        table = QtGui.QTableWidget()  #stworzenie widgetu z tabela
-        table.setRowCount(Game.rows)
-        table.setColumnCount(Game.cols)
+        self.table = QtGui.QTableWidget()  #stworzenie widgetu z tabela
+        self.table.setRowCount(Game.rows)
+        self.table.setColumnCount(Game.cols)
 
-        # header = table.horizontalHeader()
-        # for w in range(10):
-        table.resizeRowsToContents()
-        table.resizeColumnsToContents()
-
-        for w in range(Game.rows):  #wpisanie komorek do wspolrzednych z danych we.
-            for k in range(Game.cols):
-                table.setItem(w,k,QtGui.QTableWidgetItem(Life.matrix[w][k]))
+        self.table.resizeRowsToContents()
+        self.table.resizeColumnsToContents()
 
         #tworzenie widegtow z menu glownego:
 
-        self.rowz = QtGui.QSpinBox()   #by uzywac wartosci z boxa musi byc
+        self.rowz = QtGui.QSpinBox()   #by uzywac wartosci z boxa musi byc self.
         self.rowz.setMinimum(1)
         self.rowz.setMaximum(20)
         self.rowz.setValue(10)
         self.rowz.setFont(QtGui.QFont("Arial",10))
-        self.rowz.valueChanged.connect(self.rowzinput)
+        self.rowz.valueChanged.connect(self.updateboard_menu)
 
         self.colz = QtGui.QSpinBox()
         self.colz.setMinimum(1)
         self.colz.setMaximum(20)
         self.colz.setValue(10)
         self.colz.setFont(QtGui.QFont("Arial", 10))
-        self.colz.valueChanged.connect(self.colzinput)
+        self.colz.valueChanged.connect(self.updateboard_menu)
 
-        formy = QtGui.QFormLayout()  #do poukladania pionowo inputboxow
-        formy.addWidget(self.rowz)
-        formy.addWidget(self.colz)
+        self.generationz = QtGui.QSpinBox()
+        self.generationz.setMinimum(1)
+        self.generationz.setMaximum(50)
+        self.generationz.setValue(1)
+        self.generationz.setFont(QtGui.QFont("Arial", 10))
+        self.generationz.valueChanged.connect(self.updateboard_menu)
 
+        self.formy = QtGui.QFormLayout()  #do poukladania pionowo inputboxow
+
+        labRows = QtGui.QLabel("Number of rows:")
+        labCols = QtGui.QLabel("Number of columns:")
+        labGen = QtGui.QLabel("Number of generations:")
+
+        startButton = QtGui.QPushButton()
+        startButton.setText("Run the simulation")
+        startButton.clicked.connect(self.startnewgame)
+
+        fileButton = QtGui.QPushButton()
+        fileButton.setText("Input file:")
+        fileButton.clicked.connect(self.openfile)
+
+        self.path = QtGui.QLineEdit()
+
+        self.formy.addRow(labRows,self.rowz)
+        self.formy.addRow(labCols,self.colz)
+        self.formy.addRow(labGen,self.generationz)
+        self.formy.addRow(fileButton,self.path)
+        self.formy.addRow(startButton)
+
+        tabelka = QtGui.QVBoxLayout()
+        tabelka.addWidget(self.table)
+       # tabelka.setSizeConstraint(self.table.sizeHint())
 
         hbox = QtGui.QHBoxLayout()  #hbox (layout) do poukladania widgetow
-        hbox.addLayout(formy)
-        hbox.addWidget(table)
+        hbox.addLayout(self.formy)
+        hbox.addLayout(tabelka)
 
         mainWidget.setLayout(hbox)   #wrzucenie glownego widgeta do boxa
         mainWidget.show()
 
+        hbox.setSizeConstraint(self.table.sizeHintForColumn(Game.cols))
         self.setCentralWidget(mainWidget)
-
         self.show()
 
-    def rowzinput(self):
-        Game.rows = self.rowz.value()
-        print Game.rows
-
-    def colzinput(self):
-        Game.cols = self.colz.value()
-        print Game.cols
 
     def closemyapp(self):
         wybor = QtGui.QMessageBox.question(self,'Quit',"Are you sure?",QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
@@ -117,14 +128,69 @@ class Window(QtGui.QMainWindow):
         QtGui.QMessageBox.about(self,"About","\t"+str1+"\n"+str3+"\n"+str2)
 
     def startnewgame(self):
-        Life = Game(Game.rows,Game.cols)
-        Life.initialfillmatrix()
-        Life.printMatrix()
-        for i in range(4):
-            Life.playGame()
-            time.sleep(0.4)
-            Life.printMatrix()
-        Life.printToFile()
+        #wylaczenie dzialania inputow zeby nie pozmieniac nic w czasie symulacji
+        self.path.setDisabled(True)
+        self.rowz.setDisabled(True)
+        self.colz.setDisabled(True)
+        self.generationz.setDisabled(True)
+
+        self.Life.initialfillmatrix()
+        for i in range(int(self.generationz.value())):
+            self.updateboard_game()
+            self.Life.playGame()
+            #time.sleep(0.4)
+            self.updateboard_game()
+            self.Life.printToFile()
+
+        self.path.setDisabled(False)
+        self.rowz.setDisabled(False)
+        self.colz.setDisabled(False)
+        self.generationz.setDisabled(False)
+
+    def openfile(self):
+        self.clearboard_game()
+        self.Life.clearmatrix()
+        self.name = QtGui.QFileDialog.getOpenFileName(self,'Select the initial data file')
+        self.file = open(self.name,'r')
+        Window.filepath = self.name
+        self.path.setText(self.name)
+        self.Life.initialfillmatrix()
+
+        for w in range(Game.rows):  #wpisanie komorek do wspolrzednych z danych we.
+            for k in range(Game.cols):
+                self.table.setItem(w,k,QtGui.QTableWidgetItem(self.Life.matrix[w][k]))
+
+        self.table.resizeRowsToContents()
+        self.table.resizeColumnsToContents()
+
+
+    def updateboard_menu(self):
+        #przepisanie wartosci ze spinboxa to klasy game
+        Game.rows = self.rowz.value()
+        Game.cols = self.colz.value()
+        #aktualizacja rzmiaru tablicy
+        self.table.setRowCount(Game.rows)
+        self.table.setColumnCount(Game.cols)
+        #dopasowanie rozmiaru komorki do zawartosci
+        self.table.resizeRowsToContents()
+        self.table.resizeColumnsToContents()
+
+    def board_isempty(self):
+        for w in range(Game.rows):
+            for k in range(Game.cols):
+                if self.table.item(w,k) == "O":
+                    return False
+        return True
+
+    def clearboard_game(self):
+        for w in range(Game.rows):  #wpisanie komorek do wspolrzednych z danych we.
+            for k in range(Game.cols):
+                self.table.setItem(w,k,QtGui.QTableWidgetItem(""))
+
+    def updateboard_game(self):
+        for w in range(Game.rows):  #wpisanie komorek do wspolrzednych z danych we.
+            for k in range(Game.cols):
+                self.table.setItem(w,k,QtGui.QTableWidgetItem(self.Life.matrix[w][k]))
 
 
 #klasa z tablica do gry i metodami odpowiedzialnymi za jej przebieg
@@ -143,15 +209,19 @@ class Game:
         self.cols = int(cols)
         self.matrix = [[" " for x in range(self.rows)] for y in range(self.cols)] #deklaracja macierzy 2x2
 
+    def clearmatrix(self):
+        for w in range(self.rows):
+            for k in range(self.cols):
+                self.matrix[w][k]=" "
 
     #wypelnienie komorkami tablicy po uprzednim wczytaniu z pliku
     def initialfillmatrix(self):
         # otwarcie plikow z danymi we-/wy-
-        wejscie = open("danewe.txt", "r")   #musi byc tak otwarte bo inaczej miksowania nie puszcza python
-        with open("danewe.txt", "r") as input_file:      #with zamiast przypisania przez open bo jest pewnosc poprawnego zamkniecia i python inaczej nie pusci petli
+        self.wejscie = open('%s' %Window.filepath, 'r')   #musi byc tak otwarte bo inaczej miksowania nie puszcza python
+        with open('%s' %Window.filepath, 'r') as input_file:      #with zamiast przypisania przez open bo jest pewnosc poprawnego zamkniecia i python inaczej nie pusci petli
             for linia in input_file:
                  # zczytanie pojedynczej linii
-                 linia = wejscie.readline()
+                 linia = self.wejscie.readline()
                  # wspolrzedne o stalej konwencji, wiec mozliwy zapis na konkretnych indeksach
                  xx = linia[0:2]
                  yy = linia[3:5]
@@ -164,6 +234,12 @@ class Game:
 
     def printMatrix(self):
         print np.matrix(self.matrix)
+
+    def at(self,matrix,w,k):
+        if w<0 | w>self.rows | k<0 | k>self.cols:
+            return -1
+        else:
+            return matrix[w][k]
 
     def printToFile(self):
         wyjscie = open("danewy.txt","w")
@@ -184,112 +260,30 @@ class Game:
                     wyjscie.write("\n")
 
     def playGame(self):
-        backupmatrix = [[" " for x in range(int(self.rows))]for y in range(int(self.cols))]
-        for w in range(self.rows):
-            for k in range(self.cols):
-                if self.matrix[w][k] == "O":
-                    counter = 0  #do zliczania ilu sasiadow ma komorka
-                    if w >= 1 and k >= 1 and w<=self.rows-2 and k <= self.cols-2:
-                        if self.matrix[w-1][k+1] == "O":
-                            counter=counter+1
-                        if self.matrix[w-1][k] == "O":
-                            counter=counter+1
-                        if self.matrix[w-1][k-1] == "O":
-                            counter=counter+1
-                        if self.matrix[w][k+1] == "O":
-                            counter=counter+1
-                        if self.matrix[w][k-1] == "O":
-                            counter=counter+1
-                        if self.matrix[w+1][k+1] == "O":
-                            counter=counter+1
-                        if self.matrix[w+1][k] == "O":
-                            counter=counter+1
-                        if self.matrix[w+1][k-1] == "O":
-                            counter=counter+1
-                    if w==0 and k==0:
-                        if self.matrix[w+1][k+1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w][k+1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w+1][k] == "O":
-                            counter = counter + 1
-                    if w==self.rows-1 and k==self.cols-1:
-                        if self.matrix[w-1][k-1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w][k-1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w-1][k] == "O":
-                            counter = counter + 1
-                    if w==0 and k==self.cols-1:
-                        if self.matrix[w+1][k-1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w+1][k] == "O":
-                            counter = counter + 1
-                        if self.matrix[w][k-1] == "O":
-                            counter = counter + 1
-                    if w==self.rows-1 and k==0:
-                        if self.matrix[w][k+1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w-1][k] == "O":
-                            counter = counter + 1
-                        if self.matrix[w-1][k+1] == "O":
-                            counter = counter + 1
-                    if counter == 0 or counter == 1:
-                        backupmatrix[w][k] = " "
-                    if counter == 2:
-                        backupmatrix[w][k] = "O"
-                    if counter >= 3:
-                        backupmatrix[w][k] = " "
-                elif backupmatrix[w][k] == " ":
-                    counter = 0  # do zliczania ilu sasiadow ma komorka
-                    if w >= 1 and k >= 1 and w <= self.rows - 2 and k <= self.cols - 2:
-                        if self.matrix[w - 1][k + 1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w - 1][k] == "O":
-                            counter = counter + 1
-                        if self.matrix[w - 1][k - 1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w][k + 1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w][k - 1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w + 1][k + 1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w + 1][k] == "O":
-                            counter = counter + 1
-                        if self.matrix[w + 1][k - 1] == "O":
-                            counter = counter + 1
-                    if w == 0 and k == 0:
-                        if self.matrix[w + 1][k + 1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w][k + 1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w + 1][k] == "O":
-                            counter = counter + 1
-                    if w == self.rows - 1 and k == self.cols - 1:
-                        if self.matrix[w - 1][k - 1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w][k - 1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w - 1][k] == "O":
-                            counter = counter + 1
-                    if w == 0 and k == self.cols - 1:
-                        if self.matrix[w+1][k - 1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w+1][k] == "O":
-                            counter = counter + 1
-                        if self.matrix[w][k-1] == "O":
-                            counter = counter + 1
-                    if w == self.rows - 1 and k == 0:
-                        if self.matrix[w][k+1] == "O":
-                            counter = counter + 1
-                        if self.matrix[w-1][k] == "O":
-                            counter = counter + 1
-                        if self.matrix[w-1][k+1] == "O":
-                            counter = counter + 1
-                    if counter == 3:
-                        backupmatrix[w][k] = "O"
-        self.matrix = backupmatrix   #przepisanie tablicy
+
+        #nalezy przepisac elementy recznie zamiast kopiowac macierz zwyklym przypisaniem
+        #bo leci 'wskaznik' i dzialamy na zmienionej macierzy - tl;dr -> przestaje dzialac
+        backupmatrix = [[" " for x in range(int(self.rows))] for y in range(int(self.cols))]
+        for w in range(self.rows-1):
+            for k in range(self.cols-1):
+                backupmatrix[w][k] = self.matrix[w][k]
+
+        for w in range(self.rows-1):
+            for k in range(self.cols-1):
+                neighbors = 0
+                if self.at(backupmatrix,w-1,k+1) == "O": neighbors+=1
+                if self.at(backupmatrix, w - 1, k) == "O": neighbors += 1
+                if self.at(backupmatrix, w - 1, k-1) == "O": neighbors += 1
+                if self.at(backupmatrix, w, k + 1) == "O": neighbors += 1
+                if self.at(backupmatrix, w, k - 1) == "O": neighbors += 1
+                if self.at(backupmatrix, w + 1, k + 1) == "O": neighbors += 1
+                if self.at(backupmatrix, w + 1, k) == "O": neighbors += 1
+                if self.at(backupmatrix, w + 1, k - 1) == "O": neighbors += 1
+
+                if (self.at(backupmatrix,w,k) == "O") and (neighbors<2 or neighbors>3):
+                    self.matrix[w][k]=" "
+                elif (self.at(backupmatrix,w,k)== " ") and neighbors == 3:
+                    self.matrix[w][k] = "O"
 
 
 def run_app():
@@ -298,20 +292,6 @@ def run_app():
     GUI.show()
     sys.exit(app.exec_())
 
-
-# print "Gra w zycie:\n"
-# rows = raw_input("Podaj ilosc wierszy tablicy z gra:\n")
-# cols = raw_input("Podaj ilosc kolumn tablicy z gra:\n")
-# generations = raw_input("Podaj ilosc pokolen:\n")
-
 run_app()
 
-# Life = Game(rows,cols)
-# Life.initialfillmatrix()
-# Life.printMatrix()
-# for i in range(int(generations)):
-#     Life.playGame()
-#     time.sleep(0.4)
-#     Life.printMatrix()
-# Life.printToFile()
 
