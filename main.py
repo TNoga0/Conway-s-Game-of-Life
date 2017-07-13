@@ -7,6 +7,8 @@ import sys
 class Window(QtGui.QMainWindow):
 
     filepath = "default.txt"
+    iter = 0
+
 
     def __init__(self):
         super(Window,self).__init__()
@@ -102,14 +104,14 @@ class Window(QtGui.QMainWindow):
         tabelka.addWidget(self.table)
        # tabelka.setSizeConstraint(self.table.sizeHint())
 
-        hbox = QtGui.QHBoxLayout()  #hbox (layout) do poukladania widgetow
-        hbox.addLayout(self.formy)
-        hbox.addLayout(tabelka)
+        self.hbox = QtGui.QHBoxLayout()  #hbox (layout) do poukladania widgetow
+        self.hbox.addLayout(self.formy)
+        self.hbox.addLayout(tabelka)
 
-        mainWidget.setLayout(hbox)   #wrzucenie glownego widgeta do boxa
+        mainWidget.setLayout(self.hbox)   #wrzucenie glownego widgeta do boxa
         mainWidget.show()
 
-        hbox.setSizeConstraint(self.table.sizeHintForColumn(Game.cols))
+        self.hbox.setSizeConstraint(self.table.sizeHintForColumn(Game.cols))
         self.setCentralWidget(mainWidget)
         self.show()
 
@@ -127,6 +129,17 @@ class Window(QtGui.QMainWindow):
         str3 = "Made for and with educational purposes"
         QtGui.QMessageBox.about(self,"About","\t"+str1+"\n"+str3+"\n"+str2)
 
+    def game_loop(self):
+        if self.iter < int(self.generationz.value()):
+            self.Life.playGame()
+            print np.matrix(self.Life.matrix)
+            self.Life.printToFile()
+            time.sleep(0.5)
+            self.updateall_game()
+        else:
+            self.startnewgame()
+
+
     def startnewgame(self):
         #wylaczenie dzialania inputow zeby nie pozmieniac nic w czasie symulacji
         self.path.setDisabled(True)
@@ -134,13 +147,23 @@ class Window(QtGui.QMainWindow):
         self.colz.setDisabled(True)
         self.generationz.setDisabled(True)
 
+        self.timer = QtCore.QTimer(self)
+        self.timer.setInterval(100)
+        self.timer.timeout.connect(self.updateall_game)
+
         self.Life.initialfillmatrix()
-        for i in range(int(self.generationz.value())):
-            self.updateboard_game()
-            self.Life.playGame()
-            #time.sleep(0.4)
-            self.updateboard_game()
-            self.Life.printToFile()
+        if self.iter < int(self.generationz.value()):
+            self.game_loop()
+        else:
+            pass
+
+        # for i in range(int(self.generationz.value())):
+        #     #self.timer.start()
+        #     self.Life.playGame()
+        #     print np.matrix(self.Life.matrix)
+        #     self.timer.singleShot(10, self.updateall_game())
+        #     self.Life.printToFile()
+
 
         self.path.setDisabled(False)
         self.rowz.setDisabled(False)
@@ -191,6 +214,15 @@ class Window(QtGui.QMainWindow):
         for w in range(Game.rows):  #wpisanie komorek do wspolrzednych z danych we.
             for k in range(Game.cols):
                 self.table.setItem(w,k,QtGui.QTableWidgetItem(self.Life.matrix[w][k]))
+
+    def updateall_game(self):
+        #print "chuj"
+        self.clearboard_game()
+        self.updateboard_game()
+        self.table.update()
+        self.iter += 1
+        #self.timer.stop()
+        self.game_loop()
 
 
 #klasa z tablica do gry i metodami odpowiedzialnymi za jej przebieg
