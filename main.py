@@ -216,7 +216,6 @@ class Window(QtGui.QMainWindow):
                 self.table.setItem(w,k,QtGui.QTableWidgetItem(self.Life.matrix[w][k]))
 
     def updateall_game(self):
-        #print "chuj"
         self.clearboard_game()
         self.updateboard_game()
         self.table.update()
